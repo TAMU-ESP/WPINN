@@ -13,18 +13,17 @@ The WPINN framework leverages a **baseline neural network architecture** that co
 ## 📁 Repository Structure
 
 ```
-.
 ├── cnn_transformer_nn.py     # Baseline CNN + Transformer neural network architecture
-├── cp_model.py               # Training model for estimating Constant Parameters (CP)
-├── bbp_model.py              # Training model for estimating Beat-to-Beat Parameters (BBP)
-└── pdp_model.py              # Training model for estimating Pressure Dependent Parameters (PDP)
+├── cp_model.py               # Training model using constant parameters (CP)
+├── bbp_model.py              # Training model using beat-to-beat parameters (BBP)
+└── pdp_model.py              # Training model using pressure dependent parameters (PDP)
 ```
 
-## 🧠 Model Details
+## 🧠 Neural Network Architecture Details
 
 ### `cnn_transformer_nn.py`
 
-This file defines the **core neural network architecture**, combining:
+This file defines the **baseline neural network architecture**, combining:
 
 - **Convolutional layers (CNN)** to capture input waveform spatial features
 - **Transformer encoder blocks** to model long-range dependencies and temporal context
@@ -33,4 +32,4 @@ This modular architecture serves as the foundation for the CP, BBP, and PDP mode
 
 ## 📄 Citation
 
-This project is private and intended for research use only.
+Add citation
