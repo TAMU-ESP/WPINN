@@ -4,9 +4,9 @@ import tensorflow as tf
 from cnn_transformer_nn import CNNTransformerNet
 from keras import backend as K
 import itertools
-tf.random.set_seed(0)
+tf.keras.utils.set_random_seed(0)
 
-class CPModel:
+class ConvModel:
 
     def __init__(self, x_flow_train, x_time_train, x_beat_train, y_BP_train,
                x_flow_val, x_time_val, x_beat_val, y_BP_val,
@@ -55,22 +55,22 @@ class CPModel:
                     x_wave_test, y_test,
                     x_wave_val_test)
 
-    def model_train(self, Ew_model=2, physics_weight=1, batch=16, epochs=64):
+    def model_train(self, batch=16, epochs=64):
         # Import arrays, models, etc.
         (m_flow, s_flow, m_time, s_time, m_BP, s_BP,
          x_wave_train, y_train,
          x_wave_val, y_val,
          x_wave_test, y_test,
-         x_wave_val_test) = CPModel.preprocess(self)
-        windk_model, params, unc_param = CNNTransformerNet().nn_model(input_shape=(64, 3), parameter_type='cp')
+         x_wave_val_test) = ConvModel.preprocess(self)
+        windk_model, _, unc_param = CNNTransformerNet().nn_model(input_shape=(64, 3), parameter_type=None)
         optimizer_windk_model = tf.keras.optimizers.Adam(clipnorm=10)
 
         # Constants
-        pi, epsilon, thr = tf.constant(np.pi), tf.constant(1e-6), np.inf
+        thr, size = np.inf, 64
 
         # Loss curve lists
-        conv_loss, phys_loss = [], []
-        val_loss, test_loss = [], []
+        conv_loss = []
+        val_loss = []
 
         # Iterate for specified number of epochs
         for e in range(epochs):
@@ -84,77 +84,33 @@ class CPModel:
             val_test_batches = list(itertools.islice(itertools.cycle(val_test_batches), len(train_batches)))
             # Iterate through all train batches (val+test batches very large)
             for b in range(len(train_batches)):
-                wave_tensor = tf.convert_to_tensor(np.concatenate([x_wave_train[train_batches[b]],
-                                                                   x_wave_val_test[val_test_batches[b]]], axis=0),
-                                                                   dtype=tf.float32)
+                wave_tensor = tf.convert_to_tensor(x_wave_train[train_batches[b]], dtype=tf.float32)
                 ref_BP_tensor = tf.convert_to_tensor(y_train[train_batches[b]], dtype=tf.float32)
-                ref_BP_tensor = ref_BP_tensor * s_BP + m_BP
 
                 # Calculate gradient
                 with (tf.GradientTape() as tape):
-                    # Compute the first derivative of dy/dt
-                    with tf.GradientTape() as deriv1:
-                        deriv1.watch(wave_tensor)
-                        yp_BP_o = windk_model(wave_tensor, training=True)
-                    dyp_BP_dt = deriv1.gradient(yp_BP_o, wave_tensor)[:, :, 1]
-                    dyp_BP_dt = dyp_BP_dt * (s_BP / s_time)
+                    yp_BP_o = windk_model(wave_tensor, training=True)
 
                     # Define BP & parameter outputs
-                    yp_BP_d = yp_BP_o[:, :, 0]  # reshape
-                    yp_BP_d = yp_BP_d * s_BP + m_BP
-
-                    # Calc dI/dt
-                    flow = wave_tensor[:, :, 0] * s_flow + m_flow
-                    time = wave_tensor[:, :, 1] * s_time + m_time
-                    dI_flow_dt = tf.convert_to_tensor(np.gradient(flow, axis=-1) / np.gradient(time, axis=-1),
-                                                      dtype=tf.float32)
-
-                    # Params
-                    Z = 0.1*tf.tanh(params[0]) + (0.1 + 1e-2)
-                    C = 2.5*tf.tanh(params[1]) + (2.5 + 1e-2)
-                    R = tf.clip_by_value(tf.abs(params[2]), 1e-2, 100)
-
-                    # Defne individual losses #
-
-                    # Physics loss
-                    if Ew_model == 3:
-                        physics = ((dyp_BP_dt / (Z * dI_flow_dt + epsilon)) +
-                                   (yp_BP_d / (C * Z * R * dI_flow_dt + epsilon)) -
-                                   (((1 / Z) + (1 / R)) * (flow / (C * dI_flow_dt + epsilon))) - 1)
-                    else:
-                        physics = dyp_BP_dt + (yp_BP_d / (C * R + epsilon)) - (flow / C)
-                    loss_physics = K.mean(K.square(physics / s_flow))
+                    yp_BP_d = yp_BP_o[:, :, 0]
 
                     # Conventional MSE loss
-                    loss_mse_BP = K.mean(K.square((ref_BP_tensor[:, :, 0] - yp_BP_d[:len(ref_BP_tensor)]) / s_BP))
+                    loss_mse_BP = K.mean(K.square(ref_BP_tensor[:, :, 0] - yp_BP_d))
 
                     # Total loss
                     unc_param = tf.cast(unc_param, tf.float64)
                     # Calculate weights
                     e_d = tf.abs(unc_param[0])
                     s_d = tf.math.log(tf.square(e_d))
-                    e_p = tf.abs(unc_param[1])
-                    s_p = tf.math.log(tf.square(e_p))
                     w_d = 0.5 * tf.math.exp(-s_d)
-                    w_p = 0.5 * tf.math.exp(-s_p)
-                    # Ensure loss_mse_BP and loss_physics are float64
-                    loss_mse_BP = w_d * tf.cast(loss_mse_BP, tf.float64)
-                    loss_physics = w_p * tf.cast(loss_physics, tf.float64)
-                    c1 = s_d + s_p
-                    # Calculate total loss
-                    c2 = s_d + (s_p * 0)
-                    # Calculate total loss
-                    loss_total = loss_mse_BP + loss_physics + c1
-                    if physics_weight == 0:
-                        loss_total = loss_mse_BP + (0 * loss_physics) + c2
+                    loss_total = w_d * tf.cast(loss_mse_BP, tf.float64) + s_d
 
                 # Apply gradients & opt
-                gradients = tape.gradient(loss_total, windk_model.trainable_weights + [params, unc_param])
-                optimizer_windk_model.apply_gradients(zip(gradients,
-                                                          windk_model.trainable_weights + [params, unc_param]))
+                gradients = tape.gradient(loss_total, windk_model.trainable_weights + [unc_param])
+                optimizer_windk_model.apply_gradients(zip(gradients, windk_model.trainable_weights + [unc_param]))
 
             # Append to loss curves
-            conv_loss.append(loss_mse_BP), phys_loss.append(loss_physics)
+            conv_loss.append(loss_mse_BP)
             val_pred = windk_model.predict(x_wave_val)[:, :, 0]
             val_ref = y_val[:, :, 0]
             val_mse = mean_squared_error(val_pred.flatten(), val_ref.flatten())
@@ -171,4 +127,4 @@ class CPModel:
         y_final_test = y_test[:, :, 0] * s_BP + m_BP
         yp_final_test = best_model.predict(x_wave_test)[:, :, 0] * s_BP + m_BP
         return (best_model, y_final_test, yp_final_test,
-                np.array(conv_loss), np.array(phys_loss), np.array(val_loss))
+                np.array(conv_loss), np.array(val_loss))

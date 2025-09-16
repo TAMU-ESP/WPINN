@@ -43,12 +43,15 @@ class CNNTransformerNet :
         model = tf.keras.Model(inputs=input_layer, outputs=output_wave)
         # Params
         if parameter_type == 'cp':
-            params = tf.Variable(initial_value=np.array([0.0, 0.0, 0.0]), dtype=tf.float32, trainable=True)
+            params = tf.Variable(initial_value=np.array([0.0, 0.0, 1.0]), dtype=tf.float32, trainable=True)
+            unc_param = tf.Variable(initial_value=np.array([2.0, 2.0]), trainable=True)
         elif parameter_type == 'bbp':
             params = None
+            unc_param = tf.Variable(initial_value=np.array([2.0, 2.0]), trainable=True)
         elif parameter_type == 'pdp':
             params = tf.Variable(initial_value=np.array([0.0, 0.0, 0.0, 0.0]), dtype=tf.float32, trainable=True)
-        else:
+            unc_param = tf.Variable(initial_value=np.array([2.0, 2.0]), trainable=True)
+        elif parameter_type == None:
             params = None
-        unc_param = tf.Variable(initial_value=np.array([2.0, 2.0]), trainable=True)
+            unc_param = tf.Variable(initial_value=np.array([2.0]), trainable=True)
         return model, params, unc_param
