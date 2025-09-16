@@ -5,17 +5,6 @@ from cnn_transformer_nn import CNNTransformerNet
 from keras import backend as K
 import itertools
 tf.random.set_seed(0)
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    try:
-        # Currently, memory growth needs to be the same across GPUs
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-    except RuntimeError as e:
-        # Memory growth must be set before GPUs have been initialized
-        print(e)
 
 class PDPModel:
 
@@ -73,7 +62,7 @@ class PDPModel:
          x_wave_val, y_val,
          x_wave_test, y_test,
          x_wave_val_test) = PDPModel.preprocess(self)
-        windk_model, params, unc_param = CNNTransformerNet.nn_model(input_shape=(64, 3), parameter_type='pdp')
+        windk_model, params, unc_param = CNNTransformerNet().nn_model(input_shape=(64, 3), parameter_type='pdp')
         optimizer_windk_model = tf.keras.optimizers.Adam(clipnorm=10)
 
         # Constants
@@ -164,16 +153,16 @@ class PDPModel:
                     e_p = tf.abs(unc_param[1])
                     s_p = tf.math.log(tf.square(e_p))
                     w_d = 0.5 * tf.math.exp(-s_d)
-                    w_p = 0.5 * tf.math.exp(-s_d)
+                    w_p = 0.5 * tf.math.exp(-s_p)
                     # Ensure loss_mse_BP and loss_physics are float64
                     loss_mse_BP = w_d * tf.cast(loss_mse_BP, tf.float64)
                     loss_physics = w_p * tf.cast(loss_physics, tf.float64)
                     c1 = s_d + s_p
-                    c2 = s_d + s_p * 0
+                    c2 = s_d + (s_p * 0)
                     # Calculate total loss
                     loss_total = loss_mse_BP + loss_physics + c1
                     if physics_weight == 0:
-                        loss_total = loss_mse_BP + 0 * loss_physics + c2
+                        loss_total = loss_mse_BP + (0 * loss_physics) + c2
 
                 # Apply gradients & opt
                 gradients = tape.gradient(loss_total, windk_model.trainable_weights + [params, unc_param])
@@ -184,11 +173,8 @@ class PDPModel:
             conv_loss.append(loss_mse_BP), phys_loss.append(loss_physics)
             val_pred = windk_model.predict(x_wave_val)[:, :, 0]
             val_ref = y_val[:, :, 0]
-            test_pred = windk_model.predict(x_wave_test)[:, :, 0]
-            test_ref = y_test[:, :, 0]
             val_mse = mean_squared_error(val_pred.flatten(), val_ref.flatten())
-            test_mse = mean_squared_error(test_pred.flatten(), test_ref.flatten())
-            val_loss.append(val_mse), test_loss.append(test_mse)
+            val_loss.append(val_mse)
 
             # Save the best model according to validation MSE
             if val_mse < thr:
@@ -200,6 +186,5 @@ class PDPModel:
         # Final Reference & Predicted Test BP Data
         y_final_test = y_test[:, :, 0] * s_BP + m_BP
         yp_final_test = best_model.predict(x_wave_test)[:, :, 0] * s_BP + m_BP
-
         return (best_model, y_final_test, yp_final_test,
-                np.array(conv_loss), np.array(phys_loss), np.array(val_loss), np.array(test_loss))
+                np.array(conv_loss), np.array(phys_loss), np.array(val_loss))
