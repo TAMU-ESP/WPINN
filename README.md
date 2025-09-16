@@ -4,7 +4,7 @@ This repository contains implementations of the **Windkessel Physics Informed Ne
 
 ## 🔍 Overview
 
-The WPINN framework leverages a **baseline neural network architecture** that combines **CNNs** for local feature extraction and **Transformers** for capturing long-range temporal dependencies. This architecture is also adapted to estimate different types of Windkessel model parameters:
+The WPINN framework leverages a **baseline neural network architecture** that combines **CNNs** for local feature extraction and **Transformers** for capturing temporal dependencies. This architecture is also adapted to estimate different types of Windkessel model parameters:
 
 - **Constant Parameters (CP)**: Parameters that remain fixed across time
 - **Beat-to-Beat Parameters (BBP)**: Dynamic parameters that vary on a per-beat basis
