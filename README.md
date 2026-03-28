@@ -15,7 +15,7 @@ The WPINN framework leverages a **baseline neural network architecture** that co
 ```
 data\
 ├── example_data.pkl            # Contains example data with added noise used in notebook analysis
-└── simulated_2E_PDP.zip        # Contains simulated data with parameter values for the 2E Windkessel model
+└── simulated_2E_PDP.zip        # Contains simulated data with parameter values for the 2E Windkessel
 
 models\
 ├── cnn_transformer_nn.py       # Baseline CNN + Transformer neural network architecture
