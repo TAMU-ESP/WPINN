@@ -4,7 +4,7 @@ from keras import layers
 
 class CNNTransformerNet :
     def __init__(self, input_shape=(64, 3), parameter_type=None,
-                 num_heads=4, embed_dim=16, ff_dim=16, dropout_rate=0.1):
+                 num_heads=4, key_dim=16, ff_dim=16, dropout_rate=0.1):
 
         # General NN parameters
         self.input_shape = input_shape
@@ -12,7 +12,7 @@ class CNNTransformerNet :
 
         # Transformer encoder specific
         self.num_heads = num_heads
-        self.embed_dim = embed_dim
+        self.key_dim = key_dim
         self.ff_dim = ff_dim
         self.dropout_rate = dropout_rate
 
@@ -25,7 +25,7 @@ class CNNTransformerNet :
         return tf.cast(pos_enc, dtype=tf.float32)
 
     def transformer_encoder(self, inputs):
-        attention = layers.MultiHeadAttention(num_heads=self.num_heads, key_dim=self.embed_dim)(inputs, inputs)
+        attention = layers.MultiHeadAttention(num_heads=self.num_heads, key_dim=self.key_dim)(inputs, inputs)
         attention = layers.Dropout(self.dropout_rate)(attention)
         attention = layers.LayerNormalization(epsilon=1e-6)(inputs + attention)
         ff = layers.Dense(self.ff_dim, activation=tf.nn.swish)(attention)
