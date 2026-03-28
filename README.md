@@ -13,6 +13,10 @@ The WPINN framework leverages a **baseline neural network architecture** that co
 ## 📁 Repository Structure
 
 ```
+data\
+├── example_data.pkl            # Contains example data with added noise used in notebook analysis
+└── simulated_2E_PDP.zip        # Contains simulated data with parameter values for the 2E Windkessel model
+
 models\
 ├── cnn_transformer_nn.py       # Baseline CNN + Transformer neural network architecture
 ├── cp_model.py                 # Training model using constant parameters (CP)
@@ -24,6 +28,8 @@ utils\
 └── preprocessing_functions.py  # Contains functions for pre/post processing
 
 model_analysis.ipynb            # Notebook for running example analysis
+
+requirements.txt                # List of packages used in this repo
 ```
 
 ## 🧠 Neural Network Architecture Details
