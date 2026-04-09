@@ -45,4 +45,5 @@ This modular architecture serves as the foundation for the CP, BBP, and PDP mode
 
 ## 📄 Citation
 
-Add citation
+Citation for aortic flow waveforms:
+Mariscal-Harana, Jorge et al. “Estimating central blood pressure from aortic flow: development and assessment of algorithms.” American journal of physiology. Heart and circulatory physiology vol. 320,2 (2021): H494-H510. doi:10.1152/ajpheart.00241.2020
