@@ -44,6 +44,8 @@ This file defines the **baseline neural network architecture**, combining:
 This modular architecture serves as the foundation for the CP, BBP, and PDP models.
 
 ## 📄 Citations
+**Reference to Windkessel PINN manuscript**
+- Osman, D., Sel, K., Spatz, E. et al. Cardiovascular digital twins using a Windkessel physics informed neural network. npj Digit. Med. (2026). https://doi.org/10.1038/s41746-026-02610-9
 
 **Reference to aortic flow waveforms by HaeMod research group:**
 
